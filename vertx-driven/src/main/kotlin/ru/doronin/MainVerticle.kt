@@ -2,24 +2,28 @@ package ru.doronin
 
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Promise
+import mu.KotlinLogging
+import ru.doronin.calculation.FibCalculationVerticle
+import ru.doronin.http.HttpServerVerticle
+
+private val logger = KotlinLogging.logger {}
 
 class MainVerticle : AbstractVerticle() {
 
-  override fun start(startPromise: Promise<Void>) {
-    vertx
-      .createHttpServer()
-      .requestHandler { req ->
-        req.response()
-          .putHeader("content-type", "text/plain")
-          .end("Hello from Vert.x!")
-      }
-      .listen(8888) { http ->
-        if (http.succeeded()) {
-          startPromise.complete()
-          println("HTTP server started on port 8888")
-        } else {
-          startPromise.fail(http.cause());
+    override fun start(startPromise: Promise<Void>) {
+        try {
+            vertx.deployVerticle(FibCalculationVerticle())
+                .compose { vertx.deployVerticle(HttpServerVerticle()) }
+                .onSuccess {
+                    logger.error { "Deploy success: $it" }
+                    startPromise.complete()
+                }
+                .onFailure {
+                    logger.error { "Failure: $it?.cause" }
+                    startPromise.fail(it.cause)
+                }
+        } catch (exception: Throwable) {
+            logger.error { "$exception" }
         }
-      }
-  }
+    }
 }

@@ -1,0 +1,7 @@
+# FibonacciCalculator
+
+## Package
+```
+./gradlew shadowJar
+```
+
